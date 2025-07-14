@@ -1,16 +1,20 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
+import { useChatContext } from "@/contexts/ChatContext";
 
 export default function Home() {
   const router = useRouter();
   const [input, setInput] = useState("");
+  const { setInitialMessage } = useChatContext();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
-    router.push(`/chat/${uuidv4()}`);
+    
+    const conversationId = crypto.randomUUID();
+    setInitialMessage(input.trim());
+    router.push(`/chat/${conversationId}`);
   };
 
   return (
