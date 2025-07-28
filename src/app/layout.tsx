@@ -1,8 +1,8 @@
 'use client'
 
 import "./globals.css";
-import Sidebar from "./components/Sidebar";
-import { ChatProvider } from "@/contexts/ChatContext";
+import Sidebar from "../components/Sidebar";
+import { ChatProvider } from "@/contexts/chat-context";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState } from "react";

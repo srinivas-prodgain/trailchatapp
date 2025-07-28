@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results
+/.nyc_output
 
 # next.js
 /.next/
@@ -39,3 +41,71 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Storybook build outputs
+/storybook-static
+
+# Sentry
+.sentryclirc
+
+# Local Netlify folder
+.netlify
+
+# Expo
+.expo/
+dist/
+
+# Tailwind
+/tailwind.config.js.backup
+
+# React DevTools
+react-devtools-*
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
+
+# Bundle analyzer
+.bundle-analyzer/
+
+# Turbo
+.turbo/
+
+# Generated files
+**/.next/
+**/out/
+**/dist/
+**/build/
+
+# Local environment
+.env.backup

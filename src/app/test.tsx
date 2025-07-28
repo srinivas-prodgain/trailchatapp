@@ -13,7 +13,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentMessage, setCurrentMessage] = useState("");
+  // const [currentMessage, setCurrentMessage] = useState("");
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function Home() {
     setMessages(newMessages);
     setInput('');
     setIsStreaming(true);
-    setCurrentMessage('');
+    // setCurrentMessage('');
 
     try {
       const response = await fetch('/api/chat', {
@@ -64,7 +64,7 @@ export default function Home() {
             role: 'assistant',
             content: accumulatedResponse
           }]);
-          setCurrentMessage('');
+          // setCurrentMessage('');
           setIsStreaming(false);
           console.log("done is true");
           break;
@@ -96,7 +96,7 @@ export default function Home() {
               const parsed = JSON.parse(data);
               if (parsed.content) {
                 accumulatedResponse += parsed.content;
-                setCurrentMessage(accumulatedResponse);
+                // setCurrentMessage(accumulatedResponse);
               }
             } catch (e) {
               console.log("error", e);
@@ -113,7 +113,7 @@ export default function Home() {
         content: 'Sorry, something went wrong. Please try again.'
       }]);
       setIsStreaming(false);
-      setCurrentMessage('');
+      // setCurrentMessage('');
     }
 
   }

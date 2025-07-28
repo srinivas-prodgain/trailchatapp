@@ -12,4 +12,10 @@ export const queryClient = new QueryClient({
             retry: 1,
         },
     },
-}); 
+});
+
+export const queryKeys = {
+    conversations: ['conversations'] as const,
+    conversation: (uid: string) => ['conversation', uid] as const,
+    userConversations: (userId: string) => ['userConversations', userId] as const,
+};
