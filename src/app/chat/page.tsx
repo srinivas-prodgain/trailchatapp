@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function ChatPage() {
+const ChatPage = (): React.JSX.Element => {
     const router = useRouter();
 
     useEffect(() => {
@@ -16,4 +16,6 @@ export default function ChatPage() {
             <p className="text-gray-500">Redirecting...</p>
         </div>
     );
-}
+};
+
+export default ChatPage;
