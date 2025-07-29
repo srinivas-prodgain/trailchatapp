@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { TFileUploadState, ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/types/common-types';
-import { useFileUploadSSE } from '@/hooks/api/file';
+import { TUploadResponse, useFileUploadSSE } from '@/hooks/api/file';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface FileUploadZoneProps {
@@ -155,7 +155,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
                 onStart: (fileName: string, fileSize: number) => {
                     console.log(`Upload started: ${fileName} (${fileSize} bytes)`);
                 },
-                onComplete: (fileData: any) => {
+                onComplete: (fileData: TUploadResponse) => {
                     setSelectedFiles(prev => prev.map(f =>
                         f.id === fileUpload.id
                             ? {

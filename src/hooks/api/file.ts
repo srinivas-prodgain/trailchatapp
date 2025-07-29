@@ -5,6 +5,23 @@ import { TQueryOpts } from "@/types/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
+// Types
+export type TUploadedFile = {
+    file_id: string;
+    file_name: string;
+    file_size: number;
+    file_type: string;
+    upload_date: string;
+    chunk_count: number;
+}
+
+export type TUploadResponse = {
+    fileId: string;
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    chunksCreated: number;
+}
 
 //API
 
@@ -13,7 +30,7 @@ const uploadFileWithSSE = async (
     uploadId: string,
     onProgress?: (progress: number, message?: string) => void,
     onStart?: (fileName: string, fileSize: number) => void,
-    onComplete?: (fileData: any) => void,
+    onComplete?: (fileData: TUploadResponse) => void,
     onError?: (error: string) => void
 ): Promise<void> => {
     const formData = new FormData();
@@ -90,15 +107,6 @@ const uploadFileWithSSE = async (
     }
 };
 
-export interface TUploadedFile {
-    file_id: string;
-    file_name: string;
-    file_size: number;
-    file_type: string;
-    upload_date: string;
-    chunk_count: number;
-}
-
 const get_all_files_meta_data = async (): Promise<TUploadedFile[]> => {
     const response = await fetch(`${BACKEND_URL}/api/v1/files`, {
         method: 'GET',
@@ -145,7 +153,7 @@ export const useFileUploadSSE = () => {
             uploadId: string;
             onProgress?: (progress: number, message?: string) => void;
             onStart?: (fileName: string, fileSize: number) => void;
-            onComplete?: (fileData: any) => void;
+            onComplete?: (fileData: TUploadResponse) => void;
             onError?: (error: string) => void;
         }) =>
             uploadFileWithSSE(file, uploadId, onProgress, onStart, onComplete, onError),
