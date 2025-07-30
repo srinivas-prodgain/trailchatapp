@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 
-interface Message {
+type TMessage = {
   role: "user" | "assistant";
   content: string;
 }
@@ -11,7 +11,7 @@ interface Message {
 export default function Home() {
 
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<TMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   // const [currentMessage, setCurrentMessage] = useState("");
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -24,7 +24,7 @@ export default function Home() {
     if (!input.trim() || isStreaming) return;
 
 
-    const userMessage: Message = {
+    const userMessage: TMessage = {
       role: "user",
       content: input,
     }

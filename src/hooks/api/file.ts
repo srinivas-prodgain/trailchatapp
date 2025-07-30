@@ -177,7 +177,7 @@ export const useDeleteFileFromVectorDb = () => {
     return useMutation({
         mutationFn: (fileId: string) => delete_file_from_vector_db(fileId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['files'] });
+            queryClient.invalidateQueries({ queryKey: ['files']});
         },
     });
 }

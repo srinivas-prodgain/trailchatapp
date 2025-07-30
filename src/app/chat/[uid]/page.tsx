@@ -13,6 +13,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MessageContent } from "@/components/message-component";
 import { FileUploadModal } from "@/components/file-upload-modal";
 import { FilesContextModal } from "@/components/files-context-modal";
+import { TToolStatus } from "@/types/shared";
+
 
 
 
@@ -44,6 +46,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
     const [currentMessage, setCurrentMessage] = useState("");
     const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
     const [conversationTitle, setConversationTitle] = useState(" ");
+    const [toolStatus, setToolStatus] = useState<TToolStatus | null>(null);
 
 
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -161,10 +164,23 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                         const data = line.slice(6);
                         if (data === '[DONE]') {
                             console.log("done");
+                            setToolStatus(null); // Clear tool status when done
                             break;
                         }
                         try {
                             const parsed = JSON.parse(data);
+
+                            // Handle tool status updates
+                            if (parsed.type === 'tool_status') {
+                                setToolStatus({
+                                    tool: parsed.tool,
+                                    status: parsed.status,
+                                    details: parsed.details
+                                });
+                                continue; // Skip to next line
+                            }
+
+                            // Handle regular message content
                             if (parsed.content) {
                                 accumulatedResponse += parsed.content;
                                 setCurrentMessage(accumulatedResponse);
@@ -283,7 +299,10 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                                         : 'bg-white text-gray-900 rounded-bl-md border border-gray-200'}
                                     `}
                                 >
-                                    <MessageContent content={msg.content} />
+                                    <MessageContent
+                                        content={msg.content}
+                                        toolStatus={msg.role === 'assistant' && idx === messages.length - 1 ? toolStatus : null}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -300,15 +319,13 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                             </div>
                         </div>
                     )}
-                    {isStreaming && currentMessage && (
-                        <div className="flex justify-start">
-                            <div className="flex items-start gap-2">
-                                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-lg shadow bg-green-500">
-                                    A
-                                </div>
-                                <div className="px-4 py-2 rounded-2xl shadow-md text-base max-w-xs sm:max-w-md break-words bg-white text-gray-900 rounded-bl-md border border-gray-200 animate-pulse">
-                                    <MessageContent content={currentMessage} />
-                                </div>
+                    {isStreaming && (
+                        <div className="flex justify-start mb-4">
+                            <div className="max-w-[70%] px-4 py-2 rounded-lg bg-gray-100 text-gray-800">
+                                <MessageContent
+                                    content={currentMessage}
+                                    toolStatus={toolStatus}
+                                />
                             </div>
                         </div>
                     )}

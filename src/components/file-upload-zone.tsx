@@ -2,17 +2,19 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
-import { TFileUploadState, ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/types/common-types';
+import { TFileUploadState } from '@/types/common-types';
+import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/types/shared';
 import { TUploadResponse, useFileUploadSSE } from '@/hooks/api/file';
 import { useQueryClient } from '@tanstack/react-query';
 
-interface FileUploadZoneProps {
+
+type TFileUploadZoneProps = {
     onFilesSelected?: (files: TFileUploadState[]) => void;
     maxFiles?: number;
     className?: string;
 }
 
-export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
+export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
     onFilesSelected,
     maxFiles = 5,
     className = ''

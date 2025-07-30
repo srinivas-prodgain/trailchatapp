@@ -28,6 +28,7 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
+    "teja-npm": "^1.0.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

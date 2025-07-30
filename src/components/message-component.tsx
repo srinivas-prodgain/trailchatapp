@@ -1,18 +1,39 @@
 'use client'
 
-export function MessageContent({ content }: { content: string }) {
+import { ToolStatusIndicator } from './tool-status-indicator';
+
+type TMessageContentProps = {
+    content: string;
+    toolStatus?: {
+        tool: string;
+        status: 'started' | 'completed';
+        details?: any;
+    } | null;
+};
+
+export function MessageContent({ content, toolStatus }: TMessageContentProps) {
     const parts = content.split(/(data:image\/[^;]+;base64,[A-Za-z0-9+/=]+)/g);
-    
+
     return (
         <div className="space-y-2">
+            {/* Show tool status if available */}
+            {toolStatus && (
+                <ToolStatusIndicator
+                    tool={toolStatus.tool}
+                    status={toolStatus.status}
+                    details={toolStatus.details}
+                />
+            )}
+
+            {/* Existing content rendering */}
             {parts.map((part, index) => {
                 // Check if this part is a data URL
                 if (part.match(/^data:image\/[^;]+;base64,/)) {
                     return (
                         <div key={index} className="flex flex-col items-center space-y-2">
-                            <img 
-                                src={part} 
-                                alt="Generated QR Code" 
+                            <img
+                                src={part}
+                                alt="Generated QR Code"
                                 className="max-w-full h-auto rounded-lg shadow-md border border-gray-200"
                                 style={{ maxWidth: '200px', maxHeight: '200px' }}
                             />
@@ -40,7 +61,7 @@ export function MessageContent({ content }: { content: string }) {
                         </div>
                     );
                 }
-                
+
                 // Regular text content
                 if (part.trim()) {
                     return (
@@ -49,7 +70,7 @@ export function MessageContent({ content }: { content: string }) {
                         </div>
                     );
                 }
-                
+
                 return null;
             })}
         </div>
