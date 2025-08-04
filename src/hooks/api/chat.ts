@@ -10,9 +10,9 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 const streamChat = async (
     uid: string,
     messages: TMessage[],
-    userId?: string,
+    user_id?: string,
     model?: string,
-    selectedFileIds?: string[],
+    selected_file_ids?: string[],
     abortSignal?: AbortSignal
 ): Promise<TStreamChatResponse> => {
     // Get the latest message (last message in the array)
@@ -24,9 +24,9 @@ const streamChat = async (
 
     const requestBody: TStreamChatRequest = {
         message: latestMessage.content,
-        userId: userId || '',
+        user_id: user_id || '',
         model: model || 'claude-3-5-sonnet-20241022',
-        selectedFileIds
+        selected_file_ids
     };
 
     const response = await fetch(`${BACKEND_URL}/api/v1/stream/${uid}`, {
@@ -43,16 +43,16 @@ const streamChat = async (
 
 //Hooks
 
-export const useStreamChat = (uid: string, messages: TMessage[], userId: string, model: string, selectedFileIds?: string[]) => {
+export const useStreamChat = (uid: string, messages: TMessage[], user_id: string, model: string, selected_file_ids?: string[]) => {
     return useMutation({
-        mutationFn: ({ uid, messages, userId, model, selectedFileIds, abortSignal }: {
+        mutationFn: ({ uid, messages, user_id, model, selected_file_ids, abortSignal }: {
             uid: string;
             messages: TMessage[];
-            userId: string;
+            user_id: string;
             model: string;
-            selectedFileIds?: string[];
+            selected_file_ids?: string[];
             abortSignal?: AbortSignal;
-        }) => streamChat(uid, messages, userId, model, selectedFileIds, abortSignal),
+        }) => streamChat(uid, messages, user_id, model, selected_file_ids, abortSignal),
     });
 };
 

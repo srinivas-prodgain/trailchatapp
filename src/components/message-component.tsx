@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react';
 import { ToolStatusIndicator } from './tool-status-indicator';
 
 type TMessageContentProps = {
@@ -7,12 +8,16 @@ type TMessageContentProps = {
     toolStatus?: {
         tool: string;
         status: 'started' | 'completed';
-        details?: any;
+        details?: {
+            resultCount?: number;
+            error?: string;
+        };
     } | null;
 };
 
 export function MessageContent({ content, toolStatus }: TMessageContentProps) {
     const parts = content.split(/(data:image\/[^;]+;base64,[A-Za-z0-9+/=]+)/g);
+
 
     return (
         <div className="space-y-2">

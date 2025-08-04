@@ -144,15 +144,17 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                 file: fileUpload.file,
                 uploadId,
                 onProgress: (progress: number, message?: string) => {
-                    setSelectedFiles(prev => prev.map(f =>
-                        f.id === fileUpload.id
-                            ? {
+                    setSelectedFiles(prev => prev.map(f => {
+                        // Don't update progress if file is already in error state
+                        if (f.id === fileUpload.id && f.uploadStatus !== 'error') {
+                            return {
                                 ...f,
                                 uploadProgress: progress,
                                 uploadMessage: message || 'Processing...' + progress + '%'
-                            }
-                            : f
-                    ));
+                            };
+                        }
+                        return f;
+                    }));
                 },
                 onStart: (fileName: string, fileSize: number) => {
                     console.log(`Upload started: ${fileName} (${fileSize} bytes)`);
@@ -171,12 +173,22 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                     queryClient.invalidateQueries({ queryKey: ['files'] });
                 },
                 onError: (error: string) => {
+                    // Make error messages more user-friendly
+                    let userFriendlyError = error;
+                    if (error.includes('empty') || error.includes('no readable text') || error.includes('No text content')) {
+                        userFriendlyError = 'This file appears to be empty or unreadable. Please check that your file contains text content.';
+                    } else if (error.includes('File processing failed:')) {
+                        // Remove the technical prefix for other errors
+                        userFriendlyError = error.replace('File processing failed: ', '');
+                    }
+
                     setSelectedFiles(prev => prev.map(f =>
                         f.id === fileUpload.id
                             ? {
                                 ...f,
                                 uploadStatus: 'error' as const,
-                                uploadMessage: `Upload failed: ${error}`
+                                uploadProgress: 0, // Reset progress on error
+                                uploadMessage: userFriendlyError
                             }
                             : f
                     ));
@@ -190,6 +202,7 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                     ? {
                         ...f,
                         uploadStatus: 'error' as const,
+                        uploadProgress: 0, // Reset progress on error
                         uploadMessage: 'Upload request failed'
                     }
                     : f
@@ -197,8 +210,8 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
         }
     };
 
-    const removeFile = useCallback((fileId: string) => {
-        setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
+    const removeFile = useCallback((file_id: string) => {
+        setSelectedFiles(prev => prev.filter(f => f.id !== file_id));
     }, []);
 
     const formatFileSize = (bytes: number): string => {
@@ -266,63 +279,80 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
 
             {/* Selected Files List */}
             {selectedFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                <div className="mt-6 space-y-3">
+                    <h4 className="text-base font-medium text-gray-800 mb-3">
                         Selected Files ({selectedFiles.length})
                     </h4>
                     {selectedFiles.map((file) => (
                         <div
                             key={file.id}
-                            className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
+                            className={`p-4 bg-white border rounded-lg shadow-sm transition-all duration-200 ${file.uploadStatus === 'uploading'
+                                ? 'border-blue-300 bg-blue-50'
+                                : file.uploadStatus === 'completed'
+                                    ? 'border-green-300 bg-green-50'
+                                    : file.uploadStatus === 'error'
+                                        ? 'border-red-300 bg-red-50'
+                                        : 'border-gray-200 hover:shadow-md'
+                                }`}
                         >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                {getFileIcon(file.name)}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                        {file.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        {formatFileSize(file.size)}
-                                    </p>
+                            {/* File Info Row */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {getFileIcon(file.name)}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate mb-1">
+                                            {file.name}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {formatFileSize(file.size)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Status and Actions - Only for pending state */}
+                                <div className="flex items-center gap-2">
+                                    {file.uploadStatus === 'pending' && (
+                                        <>
+                                            <button
+                                                onClick={() => handleUploadFile(file)}
+                                                disabled={fileUploadMutation.isPending}
+                                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {fileUploadMutation.isPending ? 'Uploading...' : 'Upload'}
+                                            </button>
+                                            <button
+                                                onClick={() => removeFile(file.id)}
+                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                title="Remove file"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Status and Actions */}
-                            <div className="flex items-center gap-2">
-                                {file.uploadStatus === 'pending' && (
-                                    <>
-                                        <button
-                                            onClick={() => handleUploadFile(file)}
-                                            disabled={fileUploadMutation.isPending}
-                                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                        >
-                                            Upload
-                                        </button>
-                                        <button
-                                            onClick={() => removeFile(file.id)}
-                                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                            title="Remove file"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </>
-                                )}
+                            {/* Status Section - Below file info */}
+                            <div className="mt-3">
 
                                 {file.uploadStatus === 'uploading' && (
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-blue-600 transition-all duration-300"
-                                                    style={{ width: `${file.uploadProgress || 0}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs text-gray-500 font-medium">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-blue-700 font-medium">
+                                                Uploading...
+                                            </span>
+                                            <span className="text-sm text-blue-700 font-medium">
                                                 {file.uploadProgress || 0}%
                                             </span>
                                         </div>
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                                                style={{ width: `${file.uploadProgress || 0}%` }}
+                                            />
+                                        </div>
                                         {file.uploadMessage && (
-                                            <div className="text-xs text-gray-500 text-right max-w-48 truncate">
+                                            <div className="text-sm text-blue-600 leading-tight">
                                                 {file.uploadMessage}
                                             </div>
                                         )}
@@ -330,15 +360,15 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                                 )}
 
                                 {file.uploadStatus === 'completed' && (
-                                    <div className="flex flex-col items-end gap-1">
+                                    <div className="space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                            <span className="text-xs text-green-600 font-medium">
-                                                Uploaded successfully
+                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                            <span className="text-sm text-green-700 font-medium">
+                                                Upload completed successfully
                                             </span>
                                         </div>
                                         {file.uploadMessage && (
-                                            <div className="text-xs text-green-500 text-right max-w-48 truncate">
+                                            <div className="text-sm text-green-600 leading-tight">
                                                 {file.uploadMessage}
                                             </div>
                                         )}
@@ -346,22 +376,39 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                                 )}
 
                                 {file.uploadStatus === 'error' && (
-                                    <div className="flex flex-col items-end gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <AlertCircle className="w-4 h-4 text-red-500" />
-                                            <span className="text-xs text-red-600">
-                                                Upload failed
-                                            </span>
-                                            <button
-                                                onClick={() => removeFile(file.id)}
-                                                className="p-1 text-gray-400 hover:text-red-500 transition-colors ml-1"
-                                                title="Remove failed upload"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                    <div className="space-y-3">
+                                        {/* Error Progress Bar */}
+                                        <div className="w-full h-2 bg-red-200 rounded-full overflow-hidden">
+                                            <div className="h-full bg-red-500 w-full"></div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <AlertCircle className="w-5 h-5 text-red-500" />
+                                                <span className="text-sm text-red-700 font-medium">
+                                                    Upload failed
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleUploadFile(file)}
+                                                    disabled={fileUploadMutation.isPending}
+                                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title="Retry upload"
+                                                >
+                                                    Retry
+                                                </button>
+                                                <button
+                                                    onClick={() => removeFile(file.id)}
+                                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                                                    title="Remove failed upload"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                         {file.uploadMessage && (
-                                            <div className="text-xs text-red-500 text-right max-w-48 truncate">
+                                            <div className="text-sm text-red-600 leading-tight bg-red-100 p-3 rounded-md border-l-4 border-red-500">
                                                 {file.uploadMessage}
                                             </div>
                                         )}

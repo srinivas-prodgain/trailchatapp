@@ -1,20 +1,21 @@
 'use client'
 
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect, use, useCallback } from "react";
 import { TChatMessage, TMessage } from "@/types/common-types";
 import { useChatContext } from "@/contexts/chat-context";
 import { useStreamChat } from "@/hooks/api/chat";
-import { Paperclip, FolderOpen } from "lucide-react";
 
 import { useConversation } from "@/hooks/api/conversation";
 
 
 import { useQueryClient } from "@tanstack/react-query";
-import { MessageContent } from "@/components/message-component";
 import { FileUploadModal } from "@/components/file-upload-modal";
 import { FilesContextModal } from "@/components/files-context-modal";
 import { TToolStatus } from "@/types/shared";
-
+import { ChatHeader } from "@/components/chat-header";
+import { ChatInputForm } from "@/components/chat-input-form";
+import { MessageItem } from "@/components/message-item";
+import { MessageContent } from "@/components/message-component";
 
 
 
@@ -28,7 +29,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
         setActiveConversationId,
         selectedModel,
         setSelectedModel,
-        selectedFileIds,
+        selected_file_ids,
         globalInput,
         setGlobalInput,
         isFileUploadModalOpen,
@@ -52,7 +53,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
     const abortControllerRef = useRef<AbortController | null>(null);
     const messageEndRef = useRef<HTMLDivElement>(null);
 
-    const streamChatMutation = useStreamChat(uid, messages, "123", selectedModel, selectedFileIds);
+    const streamChatMutation = useStreamChat(uid, messages, "123", selectedModel, selected_file_ids);
     const { data: conversationData, isLoading: isLoadingConversation } = useConversation(uid);
 
     useEffect(() => {
@@ -87,7 +88,17 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
         messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isStreaming, currentMessage]);
 
-    const abortResponse = () => {
+    // Auto-resize textarea based on content
+    useEffect(() => {
+        const textarea = document.querySelector('textarea');
+        if (textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 120);
+            textarea.style.height = `${newHeight}px`;
+        }
+    }, [globalInput]);
+
+    const abortResponse = useCallback(() => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -102,9 +113,9 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
         setIsStreaming(false);
         setCurrentMessage('');
         setIsWaitingForResponse(false);
-    };
+    }, [currentMessage]);
 
-    const sendMessage = async (messageContent?: string) => {
+    const sendMessage = useCallback(async (messageContent?: string) => {
         const contentToSend = messageContent || globalInput;
         if (!contentToSend.trim() || isStreaming) return;
 
@@ -125,9 +136,9 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
             const response = await streamChatMutation.mutateAsync({
                 uid,
                 messages: newMessages,
-                userId: "123",
+                user_id: "123",
                 model: selectedModel,
-                selectedFileIds,
+                selected_file_ids,
                 abortSignal: abortControllerRef.current.signal
             });
 
@@ -210,102 +221,46 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
             setCurrentMessage('');
             setIsWaitingForResponse(false);
         }
-    };
+    }, [uid, messages, selectedModel, selected_file_ids, globalInput, isStreaming, streamChatMutation, queryClient]);
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+    const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter") {
+            if (e.shiftKey) {
+                // Allow default behavior for Shift + Enter (new line)
+                return;
+            } else {
+                // Prevent default and send message for just Enter
+                e.preventDefault();
+                sendMessage();
+            }
         }
-    };
+    }, [sendMessage]);
 
     return (
         <div className="flex flex-col h-full max-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
-            {/* Model Selector Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-gray-800">
-                    {conversationTitle || "Chat"}
-                </h1>
-                <div className="flex items-center gap-3">
-                    {/* Files in Context Button */}
-                    <button
-                        onClick={() => setIsFilesContextModalOpen(true)}
-                        className={`flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-all duration-200 group border hover:border-gray-300 ${selectedFileIds.length > 0
-                            ? 'text-blue-700 border-blue-200 bg-blue-50'
-                            : 'text-gray-600 border-gray-200 hover:text-gray-800'
-                            }`}
-                        title={selectedFileIds.length > 0
-                            ? `${selectedFileIds.length} of ${filesData?.length || 0} files selected for AI search`
-                            : `${filesData?.length || 0} files available • AI will search all`
-                        }
-                        disabled={isStreaming}
-                    >
-                        <FolderOpen className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                            {selectedFileIds.length > 0 ? 'Selected Files' : 'Files'}
-                        </span>
-                        {isLoadingFiles ? (
-                            <div className="w-3 h-3 border border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-                        ) : (
-                            <div className="flex items-center gap-1">
-                                {selectedFileIds.length > 0 && (
-                                    <span className="text-xs bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded-full font-medium">
-                                        {selectedFileIds.length}
-                                    </span>
-                                )}
-                                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium min-w-[20px] text-center">
-                                    {filesData?.length || 0}
-                                </span>
-                            </div>
-                        )}
-                    </button>
-
-                    <div className="flex items-center gap-3 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-                        <label htmlFor="model-select" className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                            Model:
-                        </label>
-                        <select
-                            id="model-select"
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className="px-3 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:border-gray-300"
-                            disabled={isStreaming}
-                        >
-                            {modelOptions.map((option) => (
-                                <option key={option.value} value={option.value} disabled={option.disabled} className="text-black bg-white">
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-            </div>
+            {/* Memoized Header */}
+            <ChatHeader
+                conversationTitle={conversationTitle}
+                selectedModel={selectedModel}
+                setSelectedModel={setSelectedModel}
+                isStreaming={isStreaming}
+                selected_file_ids={selected_file_ids}
+                filesData={filesData}
+                isLoadingFiles={isLoadingFiles}
+                modelOptions={modelOptions}
+                setIsFilesContextModalOpen={setIsFilesContextModalOpen}
+            />
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-6">
                 <div className="max-w-2xl mx-auto flex flex-col gap-4">
                     {messages.map((msg, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div className={`flex items-start gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-lg shadow ${msg.role === 'user' ? 'bg-blue-500' : 'bg-green-500'}`}>
-                                    {msg.role === 'user' ? 'U' : 'A'}
-                                </div>
-                                <div
-                                    className={`px-4 py-2 rounded-2xl shadow-md text-base max-w-xs sm:max-w-md break-words ${msg.role === 'user'
-                                        ? 'bg-blue-600 text-white rounded-br-md'
-                                        : 'bg-white text-gray-900 rounded-bl-md border border-gray-200'}
-                                    `}
-                                >
-                                    <MessageContent
-                                        content={msg.content}
-                                        toolStatus={msg.role === 'assistant' && idx === messages.length - 1 ? toolStatus : null}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <MessageItem
+                            key={`${idx}-${msg.content.slice(0, 50)}`}
+                            message={msg}
+                            index={idx}
+                            toolStatus={msg.role === 'assistant' && idx === messages.length - 1 ? toolStatus : null}
+                        />
                     ))}
                     {isWaitingForResponse && (
                         <div className="flex justify-start">
@@ -319,7 +274,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                             </div>
                         </div>
                     )}
-                    {isStreaming && (
+                    {isStreaming  && (
                         <div className="flex justify-start mb-4">
                             <div className="max-w-[70%] px-4 py-2 rounded-lg bg-gray-100 text-gray-800">
                                 <MessageContent
@@ -333,46 +288,16 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                 </div>
             </div>
 
-            {/* Input Form */}
-            <form
-                className="w-full max-w-2xl mx-auto px-2 sm:px-4 py-4 bg-white border-t border-gray-200 flex items-center gap-2 sticky bottom-0 shadow-md mb-4 rounded-lg"
-                onSubmit={e => { e.preventDefault(); sendMessage(); }}
-            >
-                <button
-                    onClick={() => setIsFileUploadModalOpen(true)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer bg-gray-100"
-                    title="Upload files"
-                    disabled={isStreaming}
-                >
-                    <Paperclip className="w-5 h-5" />
-                </button>
-                <input
-                    type="text"
-                    value={globalInput}
-                    onChange={e => setGlobalInput(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-transparent outline-none text-gray-800 text-base placeholder-gray-400 px-4 py-2"
-                    disabled={isStreaming}
-                />
-                {isStreaming ? (
-                    <button
-                        type="button"
-                        onClick={abortResponse}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow"
-                    >
-                        Stop
-                    </button>
-                ) : (
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 shadow"
-                        disabled={!globalInput.trim() || isStreaming}
-                    >
-                        Send
-                    </button>
-                )}
-            </form>
+            {/* Memoized Input Form */}
+            <ChatInputForm
+                globalInput={globalInput}
+                setGlobalInput={setGlobalInput}
+                isStreaming={isStreaming}
+                handleKeyPress={handleKeyPress}
+                sendMessage={sendMessage}
+                abortResponse={abortResponse}
+                setIsFileUploadModalOpen={setIsFileUploadModalOpen}
+            />
 
             {/* File Upload Modal */}
             <FileUploadModal

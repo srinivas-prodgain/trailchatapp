@@ -12,13 +12,13 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 
 //APIs
 //Get all conversations for a user
-const getUserConversations = async (userId: string, pagination: TPaginationQParams = { page: 1, limit: 15 }): Promise<TApiSuccess<TConversation[]>> => {
+const getUserConversations = async (user_id: string, pagination: TPaginationQParams = { page: 1, limit: 15 }): Promise<TApiSuccess<TConversation[]>> => {
     const queryParams = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
     });
 
-    const url = `${BACKEND_URL}/api/v1/conversations/user/${userId}?${queryParams}`;
+    const url = `${BACKEND_URL}/api/v1/conversations/user/${user_id}?${queryParams}`;
 
     const response = await fetch(url,
         {
@@ -87,14 +87,14 @@ const deleteConversation = async (uid: string): Promise<TApiSuccess<string>> => 
 //Hooks
 
 export const useUserConversations = (
-    userId: string,
+    user_id: string,
     pagination: TPaginationQParams = { page: 1, limit: 10 },
     options?: TQueryOpts<TApiSuccess<TConversation[]>>
 ) => {
     return useQuery({
-        queryKey: [...queryKeys.userConversations(userId), pagination],
-        queryFn: () => getUserConversations(userId, pagination),
-        enabled: !!userId,
+        queryKey: [...queryKeys.userConversations(user_id), pagination],
+        queryFn: () => getUserConversations(user_id, pagination),
+        enabled: !!user_id,
         ...options
     });
 }
@@ -142,14 +142,14 @@ export const useDeleteConversation = (uid: string) => {
 
 // Infinite scroll hook for conversations
 export const useInfiniteConversations = (
-    userId: string,
+    user_id: string,
     pageSize: number = 15,
     options?: { enabled?: boolean; staleTime?: number; cacheTime?: number }
 ) => {
     return useInfiniteQuery({
-        queryKey: [...queryKeys.userConversations(userId), 'infinite'],
+        queryKey: [...queryKeys.userConversations(user_id), 'infinite'],
         queryFn: ({ pageParam = 1 }) => {
-            return getUserConversations(userId, { page: pageParam, limit: pageSize });
+            return getUserConversations(user_id, { page: pageParam, limit: pageSize });
         },
         getNextPageParam: (lastPage: TApiSuccess<TConversation[]>) => {
             if (lastPage.pagination && lastPage.pagination.page < lastPage.pagination.total_pages) {
@@ -158,7 +158,7 @@ export const useInfiniteConversations = (
             }
             return undefined;
         },
-        enabled: !!userId,
+        enabled: !!user_id,
         initialPageParam: 1,
         ...options
     });

@@ -22,7 +22,7 @@ export type TBaseMessage = {
 export type TBaseConversation = {
     uid: string;
     title: string;
-    userId?: string;
+    user_id?: string;
     createdAt: string;
     updatedAt: string;
 };
@@ -30,9 +30,9 @@ export type TBaseConversation = {
 // Streaming chat types
 export type TStreamChatRequest = {
     message: string;
-    userId: string;
+    user_id: string;
     model: string;
-    selectedFileIds?: string[];
+    selected_file_ids?: string[];
 };
 
 export type TStreamChatChunk = {

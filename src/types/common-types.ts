@@ -25,7 +25,7 @@ export type TChatMessage = {
 
 // Backend file response from API
 export type TFileBackendResponse = {
-    fileId: string;
+    file_id: string;
     fileName: string;
     fileSize: number;
     fileType: string;
@@ -55,7 +55,7 @@ export type TFileUpload = TFileBackendResponse | TFileUploadState;
 export type TFileUploadResponse = {
     message: string;
     data: {
-        fileId: string;
+        file_id: string;
         fileName: string;
         fileSize: number;
         fileType: string;

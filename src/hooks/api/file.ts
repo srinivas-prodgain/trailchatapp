@@ -16,7 +16,7 @@ export type TUploadedFile = {
 }
 
 export type TUploadResponse = {
-    fileId: string;
+    file_id: string;
     fileName: string;
     fileSize: number;
     fileType: string;
@@ -90,9 +90,9 @@ const uploadFileWithSSE = async (
                                 }
                                 return; // Upload completed successfully
                             case 'error':
-                                if (data.error) {
-                                    onError?.(data.error);
-                                    console.log("data.error", data.error);
+                                if (data.message) {
+                                    onError?.(data.message);
+                                    console.log("data.error", data.message);
                                 }
                                 return; // Upload failed
                         }
@@ -123,8 +123,8 @@ const get_all_files_meta_data = async (): Promise<TUploadedFile[]> => {
     return data.data || [];
 }
 
-const delete_file_from_vector_db = async (fileId: string) => {
-    const response = await fetch(`${BACKEND_URL}/api/v1/files/delete/${fileId}`, {
+const delete_file_from_vector_db = async (file_id: string) => {
+    const response = await fetch(`${BACKEND_URL}/api/v1/files/delete/${file_id}`, {
         method: 'DELETE',
     });
 
@@ -175,9 +175,9 @@ export const useGetAllFilesMetaData = (
 
 export const useDeleteFileFromVectorDb = () => {
     return useMutation({
-        mutationFn: (fileId: string) => delete_file_from_vector_db(fileId),
+        mutationFn: (file_id: string) => delete_file_from_vector_db(file_id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['files']});
+            queryClient.invalidateQueries({ queryKey: ['files'] });
         },
     });
 }

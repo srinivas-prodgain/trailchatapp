@@ -19,9 +19,9 @@ export type ChatContextType = {
   setActiveConversationId: (id: string | null) => void;
   selectedModel: string;
   setSelectedModel: (model: string) => void;
-  selectedFileIds: string[];
-  setSelectedFileIds: (fileIds: string[]) => void;
-  toggleFileSelection: (fileId: string) => void;
+  selected_file_ids: string[];
+  setSelectedFileIds: (file_ids: string[]) => void;
+  toggleFileSelection: (file_id: string) => void;
   clearFileSelection: () => void;
 
   // Global modal states
@@ -48,7 +48,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [initialMessage, setInitialMessageState] = useState<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [selectedModel, setSelectedModelState] = useState<string>('openai');
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const [selected_file_ids, setSelectedFileIds] = useState<string[]>([]);
 
   // Global modal states
   const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState<boolean>(false);
@@ -90,11 +90,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const toggleFileSelection = (fileId: string) => {
+  const toggleFileSelection = (file_id: string) => {
     setSelectedFileIds(prev =>
-      prev.includes(fileId)
-        ? prev.filter(id => id !== fileId)
-        : [...prev, fileId]
+      prev.includes(file_id)
+        ? prev.filter(id => id !== file_id)
+        : [...prev, file_id]
     );
   };
 
@@ -119,7 +119,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setActiveConversationId,
       selectedModel,
       setSelectedModel,
-      selectedFileIds,
+      selected_file_ids,
       setSelectedFileIds,
       toggleFileSelection,
       clearFileSelection,

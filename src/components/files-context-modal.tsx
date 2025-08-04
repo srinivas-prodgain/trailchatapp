@@ -48,7 +48,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
     onClose
 }) => {
     const { data: files, isLoading, error, refetch } = useGetAllFilesMetaData();
-    const { selectedFileIds, toggleFileSelection, clearFileSelection, setSelectedFileIds } = useChatContext();
+    const { selected_file_ids, toggleFileSelection, clearFileSelection, setSelectedFileIds } = useChatContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [deleteConfirmation, setDeleteConfirmation] = useState<{
         isOpen: boolean;
@@ -78,12 +78,12 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
     const handleSelectAll = () => {
         if (!filteredFiles) return;
         const allFilteredIds = filteredFiles.map(file => file.file_id);
-        const isAllSelected = allFilteredIds.every(id => selectedFileIds.includes(id));
+        const isAllSelected = allFilteredIds.every(id => selected_file_ids.includes(id));
 
         if (isAllSelected) {
-            setSelectedFileIds(selectedFileIds.filter(id => !allFilteredIds.includes(id)));
+            setSelectedFileIds(selected_file_ids.filter(id => !allFilteredIds.includes(id)));
         } else {
-            const newSelection = [...new Set([...selectedFileIds, ...allFilteredIds])];
+            const newSelection = [...new Set([...selected_file_ids, ...allFilteredIds])];
             setSelectedFileIds(newSelection);
         }
     };
@@ -100,7 +100,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
             await deleteFileMutation.mutateAsync(deleteConfirmation.file.file_id);
 
             // Remove from selected files if it was selected
-            const updatedFileIds = selectedFileIds.filter(id => id !== deleteConfirmation.file!.file_id);
+            const updatedFileIds = selected_file_ids.filter(id => id !== deleteConfirmation.file!.file_id);
             setSelectedFileIds(updatedFileIds);
 
             // Manually refetch the files list
@@ -121,9 +121,9 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
     };
 
     const isAllSelected = filteredFiles?.length > 0 &&
-        filteredFiles.every(file => selectedFileIds.includes(file.file_id));
+        filteredFiles.every(file => selected_file_ids.includes(file.file_id));
 
-    const isSomeSelected = filteredFiles?.some(file => selectedFileIds.includes(file.file_id)) && !isAllSelected;
+    const isSomeSelected = filteredFiles?.some(file => selected_file_ids.includes(file.file_id)) && !isAllSelected;
 
     return (
         <>
@@ -141,8 +141,8 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                                     Files & AI Search
                                 </h2>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    {selectedFileIds.length > 0
-                                        ? `${selectedFileIds.length} of ${files?.length || 0} files selected for AI search`
+                                    {selected_file_ids.length > 0
+                                        ? `${selected_file_ids.length} of ${files?.length || 0} files selected for AI search`
                                         : `${files?.length || 0} files available • AI will search all documents`
                                     }
                                 </p>
@@ -190,7 +190,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                             </button>
 
                             <div className="flex items-center gap-3">
-                                {selectedFileIds.length > 0 && (
+                                {selected_file_ids.length > 0 && (
                                     <button
                                         onClick={clearFileSelection}
                                         className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 rounded-md px-2 py-1"
@@ -200,7 +200,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                                 )}
                                 <div className="flex items-center gap-1 text-sm text-gray-500">
                                     <Zap className="w-4 h-4" />
-                                    {selectedFileIds.length === 0 ? 'Search All' : 'Targeted Search'}
+                                    {selected_file_ids.length === 0 ? 'Search All' : 'Targeted Search'}
                                 </div>
                             </div>
                         </div>
@@ -239,7 +239,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                         ) : (
                             <div className="divide-y divide-gray-200">
                                 {filteredFiles.map((file) => {
-                                    const isSelected = selectedFileIds.includes(file.file_id);
+                                    const isSelected = selected_file_ids.includes(file.file_id);
                                     return (
                                         <div
                                             key={file.file_id}
@@ -311,7 +311,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                     <div className="p-4 bg-gray-50 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                             <div className="text-sm text-gray-600">
-                                {selectedFileIds.length === 0 ? (
+                                {selected_file_ids.length === 0 ? (
                                     <div className="flex items-center gap-1">
                                         <Zap className="w-4 h-4 text-blue-500" />
                                         AI will search across all uploaded documents
@@ -319,7 +319,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                                 ) : (
                                     <div className="flex items-center gap-1">
                                         <FileSearch className="w-4 h-4 text-blue-500" />
-                                        AI will search only in {selectedFileIds.length} selected file{selectedFileIds.length !== 1 ? 's' : ''}
+                                        AI will search only in {selected_file_ids.length} selected file{selected_file_ids.length !== 1 ? 's' : ''}
                                     </div>
                                 )}
                             </div>

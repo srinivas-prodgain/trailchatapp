@@ -2,7 +2,8 @@
 'use client'
 import {
     Search,
-    Zap
+    Zap,
+    CloudSun
 } from 'lucide-react';
 
 import { TToolStatus } from '@/types/shared';
@@ -16,6 +17,15 @@ export function ToolStatusIndicator({ tool, status, details }: TToolStatus) {
                 return (
                     <Search className={`${baseClasses} ${status === 'started'
                         ? 'search-spinning text-blue-600'
+                        : details?.error
+                            ? 'text-red-600'
+                            : 'text-green-600'
+                        }`} />
+                );
+            case 'weather':
+                return (
+                    <CloudSun className={`${baseClasses} ${status === 'started'
+                        ? 'animate-pulse text-blue-600'
                         : details?.error
                             ? 'text-red-600'
                             : 'text-green-600'
@@ -37,6 +47,8 @@ export function ToolStatusIndicator({ tool, status, details }: TToolStatus) {
         switch (toolName) {
             case 'web_search':
                 return 'Web Search';
+            case 'weather':
+                return 'Weather';
             default:
                 return toolName;
         }
@@ -46,6 +58,8 @@ export function ToolStatusIndicator({ tool, status, details }: TToolStatus) {
         switch (toolName) {
             case 'web_search':
                 return 'Searching the web for current information...';
+            case 'weather':
+                return 'Fetching current weather data...';
             default:
                 return 'Processing...';
         }
