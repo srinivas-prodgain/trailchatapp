@@ -77,13 +77,17 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
 
     const handleSelectAll = () => {
         if (!filteredFiles) return;
-        const allFilteredIds = filteredFiles.map(file => file.file_id);
-        const isAllSelected = allFilteredIds.every(id => selected_file_ids.includes(id));
+        // Only include completed files that are available for selection
+        const availableFileIds = filteredFiles
+            .filter(file => file.processing_status === 'completed')
+            .map(file => file.file_id);
+        const isAllAvailableSelected = availableFileIds.length > 0 &&
+            availableFileIds.every(id => selected_file_ids.includes(id));
 
-        if (isAllSelected) {
-            setSelectedFileIds(selected_file_ids.filter(id => !allFilteredIds.includes(id)));
+        if (isAllAvailableSelected) {
+            setSelectedFileIds(selected_file_ids.filter(id => !availableFileIds.includes(id)));
         } else {
-            const newSelection = [...new Set([...selected_file_ids, ...allFilteredIds])];
+            const newSelection = [...new Set([...selected_file_ids, ...availableFileIds])];
             setSelectedFileIds(newSelection);
         }
     };
@@ -98,6 +102,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
 
         try {
             await deleteFileMutation.mutateAsync(deleteConfirmation.file.file_id);
+            console.log(deleteConfirmation.file.file_id, 'deleted')
 
             // Remove from selected files if it was selected
             const updatedFileIds = selected_file_ids.filter(id => id !== deleteConfirmation.file!.file_id);
@@ -120,10 +125,11 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
         }
     };
 
-    const isAllSelected = filteredFiles?.length > 0 &&
-        filteredFiles.every(file => selected_file_ids.includes(file.file_id));
+    const availableFiles = filteredFiles?.filter(file => file.processing_status === 'completed') || [];
+    const isAllSelected = availableFiles.length > 0 &&
+        availableFiles.every(file => selected_file_ids.includes(file.file_id));
 
-    const isSomeSelected = filteredFiles?.some(file => selected_file_ids.includes(file.file_id)) && !isAllSelected;
+    const isSomeSelected = availableFiles.some(file => selected_file_ids.includes(file.file_id)) && !isAllSelected;
 
     return (
         <>
@@ -174,7 +180,7 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={handleSelectAll}
-                                disabled={!filteredFiles || filteredFiles.length === 0}
+                                disabled={!availableFiles || availableFiles.length === 0}
                                 className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                             >
                                 <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${isAllSelected
@@ -240,21 +246,39 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                             <div className="divide-y divide-gray-200">
                                 {filteredFiles.map((file) => {
                                     const isSelected = selected_file_ids.includes(file.file_id);
+                                    const isAvailable = file.processing_status === 'completed';
                                     return (
                                         <div
                                             key={file.file_id}
-                                            className={`group p-4 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-blue-50 border-r-4 border-blue-500' : ''}`}
+                                            className={`group p-4 transition-colors ${!isAvailable
+                                                ? 'opacity-60 bg-gray-50'
+                                                : isSelected
+                                                    ? 'bg-blue-50 border-r-4 border-blue-500 hover:bg-blue-100'
+                                                    : 'hover:bg-gray-50'
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 {/* Checkbox */}
                                                 <div
-                                                    className={`w-5 h-5 border-2 rounded flex items-center justify-center cursor-pointer ${isSelected
-                                                        ? 'bg-blue-600 border-blue-600'
-                                                        : 'border-gray-300 hover:border-blue-400'
+                                                    className={`w-5 h-5 border-2 rounded flex items-center justify-center ${!isAvailable
+                                                        ? 'cursor-not-allowed border-gray-200 bg-gray-100'
+                                                        : isSelected
+                                                            ? 'cursor-pointer bg-blue-600 border-blue-600'
+                                                            : 'cursor-pointer border-gray-300 hover:border-blue-400'
                                                         }`}
-                                                    onClick={() => toggleFileSelection(file.file_id)}
+                                                    onClick={() => isAvailable && toggleFileSelection(file.file_id)}
+                                                    title={!isAvailable ? 'File is not ready for search yet' : ''}
                                                 >
                                                     {isSelected && <Check className="w-3 h-3 text-white" />}
+                                                    {!isAvailable && file.processing_status === 'processing' && (
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                                                    )}
+                                                    {!isAvailable && file.processing_status === 'pending' && (
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                    )}
+                                                    {!isAvailable && file.processing_status === 'failed' && (
+                                                        <X className="w-3 h-3 text-gray-400" />
+                                                    )}
                                                 </div>
 
                                                 {/* File Icon */}
@@ -263,9 +287,17 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                                                 </div>
 
                                                 {/* File Info */}
-                                                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleFileSelection(file.file_id)}>
+                                                <div
+                                                    className={`flex-1 min-w-0 ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                                                    onClick={() => isAvailable && toggleFileSelection(file.file_id)}
+                                                >
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className={`text-sm font-medium truncate ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                                        <h3 className={`text-sm font-medium truncate ${!isAvailable
+                                                            ? 'text-gray-500'
+                                                            : isSelected
+                                                                ? 'text-blue-900'
+                                                                : 'text-gray-900'
+                                                            }`}>
                                                             {file.file_name}
                                                         </h3>
                                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isSelected
@@ -287,6 +319,33 @@ export const FilesContextModal: React.FC<TFilesContextModalProps> = ({
                                                         <div className="flex items-center gap-1">
                                                             <FileText className="w-3 h-3" />
                                                             {file.chunk_count} chunks
+                                                        </div>
+                                                        {/* Processing Status */}
+                                                        <div className="flex items-center gap-1">
+                                                            {file.processing_status === 'pending' && (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                                                    <span className="text-yellow-600">Pending</span>
+                                                                </>
+                                                            )}
+                                                            {file.processing_status === 'processing' && (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                    <span className="text-blue-600">Processing</span>
+                                                                </>
+                                                            )}
+                                                            {file.processing_status === 'completed' && (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                                    <span className="text-green-600">Completed</span>
+                                                                </>
+                                                            )}
+                                                            {file.processing_status === 'failed' && (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                                                    <span className="text-red-600">Failed</span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

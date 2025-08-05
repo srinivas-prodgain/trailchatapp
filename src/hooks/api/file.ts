@@ -13,99 +13,38 @@ export type TUploadedFile = {
     file_type: string;
     upload_date: string;
     chunk_count: number;
+    processing_status: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
 export type TUploadResponse = {
     file_id: string;
-    fileName: string;
-    fileSize: number;
-    fileType: string;
-    chunksCreated: number;
+    file_name: string;
+    file_size: number;
+    file_type: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    message: string;
 }
 
 //API
 
-const uploadFileWithSSE = async (
-    file: File,
-    uploadId: string,
-    onProgress?: (progress: number, message?: string) => void,
-    onStart?: (fileName: string, fileSize: number) => void,
-    onComplete?: (fileData: TUploadResponse) => void,
-    onError?: (error: string) => void
-): Promise<void> => {
+const uploadFile = async (file: File): Promise<TUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    // console.log("file", file);
-    // console.log("formData", formData);
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/files/upload/${uploadId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/files/upload`, {
         method: 'POST',
         body: formData,
     });
 
     if (!response.ok) {
-        throw new Error(`Upload failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
     }
 
-    if (!response.body) {
-        throw new Error('No response body for SSE stream');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-
-                        switch (data.type) {
-                            case 'start':
-                                if (data.fileName && data.fileSize) {
-                                    onStart?.(data.fileName, data.fileSize);
-                                    console.log("data.fileName", data.fileName);
-                                    console.log("data.fileSize", data.fileSize);
-                                }
-                                break;
-                            case 'progress':
-                                if (data.progress !== undefined) {
-                                    onProgress?.(data.progress, data.message);
-                                    console.log("data.progress", data.progress);
-                                    console.log("data.message", data.message);
-                                }
-                                break;
-                            case 'complete':
-                                if (data.data) {
-                                    onComplete?.(data.data);
-                                    console.log("data.data", data.data);
-                                }
-                                return; // Upload completed successfully
-                            case 'error':
-                                if (data.message) {
-                                    onError?.(data.message);
-                                    console.log("data.error", data.message);
-                                }
-                                return; // Upload failed
-                        }
-                    } catch (parseError) {
-                        console.error('Error parsing SSE data:', parseError);
-                    }
-                }
-            }
-        }
-    } finally {
-        reader.releaseLock();
-    }
+    return response.json();
 };
+
+// Note: getFileStatus function removed for now - will implement status checking later
 
 const get_all_files_meta_data = async (): Promise<TUploadedFile[]> => {
     const response = await fetch(`${BACKEND_URL}/api/v1/files`, {
@@ -137,28 +76,19 @@ const delete_file_from_vector_db = async (file_id: string) => {
 
 
 
-// Hook
+// Hooks
 
-export const useFileUploadSSE = () => {
+export const useFileUpload = () => {
     return useMutation({
-        mutationFn: ({
-            file,
-            uploadId,
-            onProgress,
-            onStart,
-            onComplete,
-            onError
-        }: {
-            file: File;
-            uploadId: string;
-            onProgress?: (progress: number, message?: string) => void;
-            onStart?: (fileName: string, fileSize: number) => void;
-            onComplete?: (fileData: TUploadResponse) => void;
-            onError?: (error: string) => void;
-        }) =>
-            uploadFileWithSSE(file, uploadId, onProgress, onStart, onComplete, onError),
+        mutationFn: (file: File) =>
+            uploadFile(file),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['files'] });
+        },
     });
 };
+
+// Note: useFileStatus hook removed for now - will implement status checking later
 
 
 

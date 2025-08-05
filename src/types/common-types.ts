@@ -38,8 +38,6 @@ export type TFileUploadState = {
     name: string;
     size: number;
     type: string;
-    uploadProgress: number;
-    uploadMessage: string;
     uploadStatus: 'pending' | 'uploading' | 'completed' | 'error';
     file: File;
 };

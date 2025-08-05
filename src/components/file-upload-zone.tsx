@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { TFileUploadState } from '@/types/common-types';
 import { ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE } from '@/types/shared';
-import { TUploadResponse, useFileUploadSSE } from '@/hooks/api/file';
+import { TUploadResponse, useFileUpload } from '@/hooks/api/file';
 import { useQueryClient } from '@tanstack/react-query';
 
 
@@ -23,7 +23,7 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
     const [selectedFiles, setSelectedFiles] = useState<TFileUploadState[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const fileUploadMutation = useFileUploadSSE();
+    const fileUploadMutation = useFileUpload();
     const queryClient = useQueryClient();
     // Notify parent when files change to avoid React update errors
     useEffect(() => {
@@ -70,8 +70,6 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                     name: file.name,
                     size: file.size,
                     type: file.type,
-                    uploadProgress: 0,
-                    uploadMessage: '',
                     uploadStatus: 'pending',
                     file
                 };
@@ -124,89 +122,43 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
     const handleUploadFile = async (fileUpload: TFileUploadState) => {
         if (!fileUpload.file) return;
 
-        // Generate upload ID for tracking
-        const uploadId = crypto.randomUUID();
-
         // Update file status to uploading
         setSelectedFiles(prev => prev.map(f =>
             f.id === fileUpload.id
                 ? {
                     ...f,
-                    uploadStatus: 'uploading' as const,
-                    uploadProgress: 0,
-                    uploadMessage: 'Starting upload...'
+                    uploadStatus: 'uploading' as const
                 }
                 : f
         ));
 
         try {
-            await fileUploadMutation.mutateAsync({
-                file: fileUpload.file,
-                uploadId,
-                onProgress: (progress: number, message?: string) => {
-                    setSelectedFiles(prev => prev.map(f => {
-                        // Don't update progress if file is already in error state
-                        if (f.id === fileUpload.id && f.uploadStatus !== 'error') {
-                            return {
-                                ...f,
-                                uploadProgress: progress,
-                                uploadMessage: message || 'Processing...' + progress + '%'
-                            };
-                        }
-                        return f;
-                    }));
-                },
-                onStart: (fileName: string, fileSize: number) => {
-                    console.log(`Upload started: ${fileName} (${fileSize} bytes)`);
-                },
-                onComplete: (fileData: TUploadResponse) => {
-                    setSelectedFiles(prev => prev.map(f =>
-                        f.id === fileUpload.id
-                            ? {
-                                ...f,
-                                uploadStatus: 'completed' as const,
-                                uploadProgress: 100,
-                                uploadMessage: `Upload completed successfully!`
-                            }
-                            : f
-                    ));
-                    queryClient.invalidateQueries({ queryKey: ['files'] });
-                },
-                onError: (error: string) => {
-                    // Make error messages more user-friendly
-                    let userFriendlyError = error;
-                    if (error.includes('empty') || error.includes('no readable text') || error.includes('No text content')) {
-                        userFriendlyError = 'This file appears to be empty or unreadable. Please check that your file contains text content.';
-                    } else if (error.includes('File processing failed:')) {
-                        // Remove the technical prefix for other errors
-                        userFriendlyError = error.replace('File processing failed: ', '');
-                    }
+            // Upload file and get immediate response
+            const uploadResponse = await fileUploadMutation.mutateAsync(fileUpload.file);
 
-                    setSelectedFiles(prev => prev.map(f =>
-                        f.id === fileUpload.id
-                            ? {
-                                ...f,
-                                uploadStatus: 'error' as const,
-                                uploadProgress: 0, // Reset progress on error
-                                uploadMessage: userFriendlyError
-                            }
-                            : f
-                    ));
-                    console.error('Upload error:', error);
-                }
-            });
+            // Update file with upload success
+            setSelectedFiles(prev => prev.map(f =>
+                f.id === fileUpload.id
+                    ? {
+                        ...f,
+                        uploadStatus: 'completed' as const
+                    }
+                    : f
+            ));
+
+            console.log(`File uploaded successfully: ${uploadResponse.file_name} (ID: ${uploadResponse.file_id})`);
+
         } catch (error) {
             // Update file status to error if upload request fails
             setSelectedFiles(prev => prev.map(f =>
                 f.id === fileUpload.id
                     ? {
                         ...f,
-                        uploadStatus: 'error' as const,
-                        uploadProgress: 0, // Reset progress on error
-                        uploadMessage: 'Upload request failed'
+                        uploadStatus: 'error' as const
                     }
                     : f
             ));
+            console.error('Upload error:', error);
         }
     };
 
@@ -336,26 +288,11 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                             <div className="mt-3">
 
                                 {file.uploadStatus === 'uploading' && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-blue-700 font-medium">
-                                                Uploading...
-                                            </span>
-                                            <span className="text-sm text-blue-700 font-medium">
-                                                {file.uploadProgress || 0}%
-                                            </span>
-                                        </div>
-                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-blue-600 transition-all duration-300 ease-out"
-                                                style={{ width: `${file.uploadProgress || 0}%` }}
-                                            />
-                                        </div>
-                                        {file.uploadMessage && (
-                                            <div className="text-sm text-blue-600 leading-tight">
-                                                {file.uploadMessage}
-                                            </div>
-                                        )}
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-sm text-blue-700 font-medium">
+                                            Uploading...
+                                        </span>
                                     </div>
                                 )}
 
@@ -367,11 +304,7 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                                                 Upload completed successfully
                                             </span>
                                         </div>
-                                        {file.uploadMessage && (
-                                            <div className="text-sm text-green-600 leading-tight">
-                                                {file.uploadMessage}
-                                            </div>
-                                        )}
+
                                     </div>
                                 )}
 
@@ -407,11 +340,7 @@ export const FileUploadZone: React.FC<TFileUploadZoneProps> = ({
                                                 </button>
                                             </div>
                                         </div>
-                                        {file.uploadMessage && (
-                                            <div className="text-sm text-red-600 leading-tight bg-red-100 p-3 rounded-md border-l-4 border-red-500">
-                                                {file.uploadMessage}
-                                            </div>
-                                        )}
+
                                     </div>
                                 )}
                             </div>
