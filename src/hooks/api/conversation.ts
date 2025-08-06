@@ -2,13 +2,13 @@
 import { TConversation, TConversationWithMessages } from '../../types/common-types';
 import { TPaginationQParams } from '../../types/pagination';
 
-import { TApiSuccess, TApiPromise, TQueryOpts, TInfiniteQueryOpts } from '../../types/api';
+import { TApiSuccess, TQueryOpts } from '../../types/api';
 
 //Hooks
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query-client';
+import axiosInstance from '../../lib/axios-instance';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 //APIs
 //Get all conversations for a user
@@ -18,68 +18,26 @@ const getUserConversations = async (user_id: string, pagination: TPaginationQPar
         limit: pagination.limit.toString()
     });
 
-    const url = `${BACKEND_URL}/api/v1/conversations/user/${user_id}?${queryParams}`;
-
-    const response = await fetch(url,
-        {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await axiosInstance.get(`/conversations/user/${user_id}?${queryParams}`);
+    return response.data;
 }
 
 //Get a conversation by id
 const getConversation = async (uid: string): Promise<TApiSuccess<TConversationWithMessages>> => {
-    const response = await fetch(`${BACKEND_URL}/api/v1/conversations/${uid}`, {
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    console.log("data", data);
-    return data;
+    const response = await axiosInstance.get(`/conversations/${uid}`);
+    return response.data;
 }
 
 //Update a conversation title
 const updateConversationTitle = async (uid: string, title: string): Promise<TApiSuccess<string>> => {
-    const response = await fetch(`${BACKEND_URL}/api/v1/conversations/${uid}`, {
-        method: 'PUT',
-        body: JSON.stringify({ title }),
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.message;
+    const response = await axiosInstance.put(`/conversations/${uid}`, { title });
+    return response.data.message;
 }
 
 //Delete a conversation
 const deleteConversation = async (uid: string): Promise<TApiSuccess<string>> => {
-    const response = await fetch(`${BACKEND_URL}/api/v1/conversations/${uid}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.message;
+    const response = await axiosInstance.delete(`/conversations/${uid}`);
+    return response.data.message;
 }
 
 

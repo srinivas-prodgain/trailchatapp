@@ -1,6 +1,7 @@
 'use client'
 
 import { FolderOpen } from "lucide-react";
+import { TUploadedFile } from "@/hooks/api/file";
 
 export type TChatHeaderProps = {
     conversationTitle: string;
@@ -8,7 +9,7 @@ export type TChatHeaderProps = {
     setSelectedModel: (model: string) => void;
     isStreaming: boolean;
     selected_file_ids: string[];
-    filesData: any[] | undefined;
+    filesData: TUploadedFile[] | undefined;
     isLoadingFiles: boolean;
     modelOptions: Array<{ value: string; label: string; disabled: boolean }>;
     setIsFilesContextModalOpen: (open: boolean) => void;

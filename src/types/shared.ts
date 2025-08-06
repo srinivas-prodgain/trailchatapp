@@ -1,7 +1,12 @@
 // Shared types used across frontend and backend
 
 // File-related types
-export type TAllowedFileTypes = 'pdf' | 'txt' | 'docx' | 'md';
+
+export const allowedFileTypes = ['pdf', 'txt', 'docx', 'md'] as const;
+export type TAllowedFileTypes = (typeof allowedFileTypes)[number];
+
+
+// File extension types
 
 export const ALLOWED_FILE_EXTENSIONS: Record<TAllowedFileTypes, string[]> = {
     pdf: ['.pdf'],
@@ -13,8 +18,13 @@ export const ALLOWED_FILE_EXTENSIONS: Record<TAllowedFileTypes, string[]> = {
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
 // Base message type (includes system role for backend streaming)
+
+const allowedRoles = ['user', 'assistant', 'system'] as const;
+export type TAllowedRoles = (typeof allowedRoles)[number];
+
+
 export type TBaseMessage = {
-    role: 'user' | 'assistant' | 'system';
+    role: TAllowedRoles;
     content: string;
 };
 

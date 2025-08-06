@@ -6,6 +6,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 
 //APIs
 
+
+
 // Stream chat with proper typing
 const streamChat = async (
     uid: string,
