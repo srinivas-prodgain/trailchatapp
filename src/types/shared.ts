@@ -30,7 +30,7 @@ export type TBaseMessage = {
 
 // Base conversation type
 export type TBaseConversation = {
-    uid: string;
+    _id: string;
     title: string;
     user_id?: string;
     createdAt: string;
@@ -77,7 +77,7 @@ export type TPaginationResponse = {
     limit: number;
     total_pages: number;
     total_items: number;
-}; 
+};
 
 
 export type TToolStatus = {

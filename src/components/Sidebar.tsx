@@ -23,21 +23,21 @@ const Sidebar: React.FC = () => {
     isFetchingNextPage,
   } = useInfiniteConversations("123", 3); // Smaller page size for testing
 
-  const deleteConversationMutation = useDeleteConversation("123");
+  const deleteConversationMutation = useDeleteConversation();
 
   // Flatten all conversations from all pages
   const conversations = data?.pages.flatMap(page => page.data).filter(Boolean) || [];
 
 
-  const handleClick = (uid: string) => {
-    setActiveConversationId(uid);
-    router.push(`/chat/${uid}`);
+  const handleClick = (id: string) => {
+    setActiveConversationId(id);
+    router.push(`/chat/${id}`);
   }
 
-  const handleDelete = (id: string, uid: string) => {
+  const handleDelete = (id: string) => {
     deleteConversationMutation.mutate(id);
 
-    if (activeConversationId && activeConversationId === uid) {
+    if (activeConversationId && activeConversationId === id) {
       router.push(`/`);
     }
 
@@ -132,13 +132,13 @@ const Sidebar: React.FC = () => {
               <div
                 key={conv._id}
                 ref={isLast && hasNextPage ? lastConversationElementRef : undefined}
-                className={`group px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700 transition-colors flex justify-between items-center ${activeConversationId === conv.uid ? "bg-blue-100" : ""}`}
-                onClick={() => handleClick(conv.uid)}
+                className={`group px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700 transition-colors flex justify-between items-center ${activeConversationId === conv._id ? "bg-blue-100" : ""}`}
+                onClick={() => handleClick(conv._id)}
               >
                 <p className="text-lg truncate">{conv.title}</p>
                 <button
                   className="opacity-0 group-hover:opacity-100 text-sm text-gray-500 hover:text-red-500 hover:scale-110 transition-all duration-300 hover:cursor-pointer mr-2"
-                  onClick={e => { e.stopPropagation(); handleDelete(conv._id, conv.uid); }}
+                  onClick={e => { e.stopPropagation(); handleDelete(conv._id); }}
                   disabled={deleteConversationMutation.isPending}
                 >
                   <TrashIcon className="w-4 h-4" />

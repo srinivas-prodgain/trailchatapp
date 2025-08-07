@@ -10,7 +10,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 
 // Stream chat with proper typing
 const streamChat = async (
-    uid: string,
+    id: string,
     messages: TMessage[],
     user_id?: string,
     model?: string,
@@ -31,7 +31,7 @@ const streamChat = async (
         selected_file_ids
     };
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/stream/${uid}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/stream/${id}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -45,16 +45,16 @@ const streamChat = async (
 
 //Hooks
 
-export const useStreamChat = (uid: string, messages: TMessage[], user_id: string, model: string, selected_file_ids?: string[]) => {
+export const useStreamChat = (id: string, messages: TMessage[], user_id: string, model: string, selected_file_ids?: string[]) => {
     return useMutation({
-        mutationFn: ({ uid, messages, user_id, model, selected_file_ids, abortSignal }: {
-            uid: string;
+        mutationFn: ({ id, messages, user_id, model, selected_file_ids, abortSignal }: {
+            id: string;
             messages: TMessage[];
             user_id: string;
             model: string;
             selected_file_ids?: string[];
             abortSignal?: AbortSignal;
-        }) => streamChat(uid, messages, user_id, model, selected_file_ids, abortSignal),
+        }) => streamChat(id, messages, user_id, model, selected_file_ids, abortSignal),
     });
 };
 

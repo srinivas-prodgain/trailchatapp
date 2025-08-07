@@ -16,6 +16,6 @@ export const queryClient = new QueryClient({
 
 export const queryKeys = {
     conversations: ['conversations'] as const,
-    conversation: (uid: string) => ['conversation', uid] as const,
+    conversation: (id: string) => ['conversation', id] as const,
     userConversations: (user_id: string) => ['userConversations', user_id] as const,
 };

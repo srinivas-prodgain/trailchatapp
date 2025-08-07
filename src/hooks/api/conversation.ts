@@ -23,20 +23,26 @@ const getUserConversations = async (user_id: string, pagination: TPaginationQPar
 }
 
 //Get a conversation by id
-const getConversation = async (uid: string): Promise<TApiSuccess<TConversationWithMessages>> => {
-    const response = await axiosInstance.get(`/conversations/${uid}`);
+const getConversation = async (id: string): Promise<TApiSuccess<TConversationWithMessages>> => {
+    const response = await axiosInstance.get(`/conversations/${id}`);
     return response.data;
 }
 
 //Update a conversation title
-const updateConversationTitle = async (uid: string, title: string): Promise<TApiSuccess<string>> => {
-    const response = await axiosInstance.put(`/conversations/${uid}`, { title });
+const updateConversationTitle = async (id: string, title: string): Promise<TApiSuccess<string>> => {
+    const response = await axiosInstance.put(`/conversations/${id}`, { title });
     return response.data.message;
 }
 
+//Create a new conversation
+const createConversation = async (user_id: string, title?: string): Promise<TApiSuccess<TConversation>> => {
+    const response = await axiosInstance.post('/conversations', { user_id, title });
+    return response.data;
+}
+
 //Delete a conversation
-const deleteConversation = async (uid: string): Promise<TApiSuccess<string>> => {
-    const response = await axiosInstance.delete(`/conversations/${uid}`);
+const deleteConversation = async (id: string): Promise<TApiSuccess<string>> => {
+    const response = await axiosInstance.delete(`/conversations/${id}`);
     return response.data.message;
 }
 
@@ -59,30 +65,30 @@ export const useUserConversations = (
 
 
 export const useConversation = (
-    uid: string,
+    id: string,
     options?: TQueryOpts<TApiSuccess<TConversationWithMessages>>
 ) => {
     return useQuery({
-        queryKey: queryKeys.conversation(uid),
-        queryFn: () => getConversation(uid),
-        enabled: !!uid,
+        queryKey: queryKeys.conversation(id),
+        queryFn: () => getConversation(id),
+        enabled: !!id,
         ...options
     });
 }
 
-export const useUpdateConversationTitle = (uid: string) => {
+export const useUpdateConversationTitle = (id: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (title: string) => updateConversationTitle(uid, title),
+        mutationFn: (title: string) => updateConversationTitle(id, title),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['conversation', uid] });
-            queryClient.invalidateQueries({ queryKey: ['userConversations', uid] });
+            queryClient.invalidateQueries({ queryKey: ['conversation', id] });
+            queryClient.invalidateQueries({ queryKey: ['userConversations', id] });
         },
     });
 
 }
 
-export const useDeleteConversation = (uid: string) => {
+export const useDeleteConversation = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -119,5 +125,18 @@ export const useInfiniteConversations = (
         enabled: !!user_id,
         initialPageParam: 1,
         ...options
+    });
+}
+
+export const useCreateConversation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ user_id, title }: { user_id: string; title?: string }) =>
+            createConversation(user_id, title),
+        onSuccess: (data) => {
+            // Invalidate user conversations to refetch the list
+            queryClient.invalidateQueries({ queryKey: queryKeys.userConversations(data?.data?.user_id || '') });
+        },
     });
 };

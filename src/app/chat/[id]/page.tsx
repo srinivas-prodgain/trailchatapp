@@ -19,8 +19,8 @@ import { MessageContent } from "@/components/message-component";
 
 
 
-export default function ChatPage({ params }: { params: Promise<{ uid: string }> }) {
-    const { uid } = use(params);
+export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const queryClient = useQueryClient();
 
     const {
@@ -53,12 +53,12 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
     const abortControllerRef = useRef<AbortController | null>(null);
     const messageEndRef = useRef<HTMLDivElement>(null);
 
-    const streamChatMutation = useStreamChat(uid, messages, "123", selectedModel, selected_file_ids);
-    const { data: conversationData, isLoading: isLoadingConversation } = useConversation(uid);
+    const streamChatMutation = useStreamChat(id, messages, "123", selectedModel, selected_file_ids);
+    const { data: conversationData, isLoading: isLoadingConversation } = useConversation(id);
 
     useEffect(() => {
-        setActiveConversationId(uid);
-    }, [uid, setActiveConversationId]);
+        setActiveConversationId(id);
+    }, [id, setActiveConversationId]);
 
 
     useEffect(() => {
@@ -134,7 +134,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
 
         try {
             const response = await streamChatMutation.mutateAsync({
-                uid,
+                id,
                 messages: newMessages,
                 user_id: "123",
                 model: selectedModel,
@@ -205,7 +205,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                 }
             }
 
-            queryClient.invalidateQueries({ queryKey: ['conversation', uid] });
+            queryClient.invalidateQueries({ queryKey: ['conversation', id] });
             queryClient.invalidateQueries({ queryKey: ['userConversations', '123'] });
 
         } catch (error) {
@@ -221,7 +221,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
             setCurrentMessage('');
             setIsWaitingForResponse(false);
         }
-    }, [uid, messages, selectedModel, selected_file_ids, globalInput, isStreaming, streamChatMutation, queryClient]);
+    }, [id, messages, selectedModel, selected_file_ids, globalInput, isStreaming, streamChatMutation, queryClient]);
 
     const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter") {
@@ -274,7 +274,7 @@ export default function ChatPage({ params }: { params: Promise<{ uid: string }> 
                             </div>
                         </div>
                     )}
-                    {isStreaming  && (
+                    {isStreaming && (
                         <div className="flex justify-start mb-4">
                             <div className="max-w-[70%] px-4 py-2 rounded-lg bg-gray-100 text-gray-800">
                                 <MessageContent

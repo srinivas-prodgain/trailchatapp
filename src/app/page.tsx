@@ -4,14 +4,14 @@ import { useChatContext } from "@/contexts/chat-context";
 import { Paperclip, FolderOpen } from "lucide-react";
 import { FileUploadModal } from "@/components/file-upload-modal";
 import { FilesContextModal } from "@/components/files-context-modal";
-import { v4 as uuidv4 } from 'uuid';
+import { useCreateConversation } from "@/hooks/api/conversation";
 
 
 
 
 export default function Home() {
   const router = useRouter();
-
+  const createConversationMutation = useCreateConversation();
 
   const {
     setInitialMessage,
@@ -29,13 +29,23 @@ export default function Home() {
     handleFilesUploaded
   } = useChatContext();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!globalInput.trim()) return;
 
-    const conversationId = uuidv4();
-    setInitialMessage(globalInput.trim());
-    router.push(`/chat/${conversationId}`);
+    try {
+      const result = await createConversationMutation.mutateAsync({
+        user_id: '123', // TODO: Replace with actual user ID from auth context
+        title: globalInput.trim().substring(0, 50) || 'New Chat'
+      });
+
+      if (result.data?._id) {
+        setInitialMessage(globalInput.trim());
+        router.push(`/chat/${result.data._id}`);
+      }
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+    }
   };
 
   return (
