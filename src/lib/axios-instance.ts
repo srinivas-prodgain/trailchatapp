@@ -1,7 +1,22 @@
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001') + '/api/v1',
+});
+
+axiosInstance.interceptors.request.use((config) => {
+    try {
+        const token = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('auth='))
+            ?.split('=')[1];
+        if (token) {
+            const headers = new AxiosHeaders(config.headers);
+            headers.set('Authorization', `Bearer ${token}`);
+            config.headers = headers;
+        }
+    } catch { }
+    return config;
 });
 
 axiosInstance.interceptors.response.use(

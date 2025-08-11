@@ -4,6 +4,18 @@ import { TStreamChatRequest, TStreamChatResponse } from "../../types/shared";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
+// Helper function to get auth token from cookie
+const getAuthToken = (): string | null => {
+    if (typeof document === 'undefined') return null;
+
+    const token = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('auth='))
+        ?.split('=')[1];
+
+    return token || null;
+};
+
 //APIs
 
 
@@ -31,11 +43,18 @@ const streamChat = async (
         selected_file_ids
     };
 
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/v1/stream/${id}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(requestBody),
         signal: abortSignal,
     });

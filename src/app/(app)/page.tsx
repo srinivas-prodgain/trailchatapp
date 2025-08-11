@@ -1,10 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useContext } from "react";
 import { useChatContext } from "@/contexts/chat-context";
-import { Paperclip, FolderOpen } from "lucide-react";
+import { Paperclip, FolderOpen, LogOut } from "lucide-react";
 import { FileUploadModal } from "@/components/file-upload-modal";
 import { FilesContextModal } from "@/components/files-context-modal";
 import { useCreateConversation } from "@/hooks/api/conversation";
+import AuthContext from "@/providers/auth-provider";
 
 
 
@@ -12,6 +14,13 @@ import { useCreateConversation } from "@/hooks/api/conversation";
 export default function Home() {
   const router = useRouter();
   const createConversationMutation = useCreateConversation();
+  const authContext = useContext(AuthContext);
+
+  if (!authContext) {
+    throw new Error('Home must be used within an AuthProvider');
+  }
+
+  const { logout } = authContext;
 
   const {
     setInitialMessage,
@@ -35,7 +44,6 @@ export default function Home() {
 
     try {
       const result = await createConversationMutation.mutateAsync({
-        user_id: '123', // TODO: Replace with actual user ID from auth context
         title: globalInput.trim().substring(0, 50) || 'New Chat'
       });
 
@@ -50,6 +58,16 @@ export default function Home() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center relative bg-gray-50">
+      {/* Logout Button */}
+      <button
+        onClick={logout}
+        className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 rounded-lg transition-all duration-200 border border-gray-200 shadow-sm hover:shadow-md"
+        title="Logout"
+      >
+        <LogOut className="w-4 h-4" />
+        <span className="text-sm font-medium">Logout</span>
+      </button>
+
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center select-none pointer-events-none">
         <h1 className="text-6xl font-thin text-gray-900 mb-3 tracking-tight">New Chat</h1>
         <p className="text-gray-500 text-lg font-light">Start a conversation</p>

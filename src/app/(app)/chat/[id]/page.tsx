@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect, use, useCallback } from "react";
+import { useState, useRef, useEffect, use, useCallback, useContext } from "react";
 import { TChatMessage, TMessage } from "@/types/common-types";
 import { useChatContext } from "@/contexts/chat-context";
 import { useStreamChat } from "@/hooks/api/chat";
+import AuthContext from "@/providers/auth-provider";
 
 import { useConversation } from "@/hooks/api/conversation";
 
@@ -22,6 +23,10 @@ import { MessageContent } from "@/components/message-component";
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const queryClient = useQueryClient();
+
+    // Get authenticated user
+    const authContext = useContext(AuthContext);
+    const user = authContext?.user;
 
     const {
         initialMessage,
@@ -53,7 +58,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     const abortControllerRef = useRef<AbortController | null>(null);
     const messageEndRef = useRef<HTMLDivElement>(null);
 
-    const streamChatMutation = useStreamChat(id, messages, "123", selectedModel, selected_file_ids);
+    const streamChatMutation = useStreamChat(id, messages, user?.uid || "anonymous", selectedModel, selected_file_ids);
     const { data: conversationData, isLoading: isLoadingConversation } = useConversation(id);
 
     useEffect(() => {
@@ -136,7 +141,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             const response = await streamChatMutation.mutateAsync({
                 id,
                 messages: newMessages,
-                user_id: "123",
+                user_id: user?.uid || "anonymous",
                 model: selectedModel,
                 selected_file_ids,
                 abortSignal: abortControllerRef.current.signal
@@ -206,7 +211,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             }
 
             queryClient.invalidateQueries({ queryKey: ['conversation', id] });
-            queryClient.invalidateQueries({ queryKey: ['userConversations', '123'] });
+            queryClient.invalidateQueries({ queryKey: ['userConversations', user?.uid || "anonymous"] });
 
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {

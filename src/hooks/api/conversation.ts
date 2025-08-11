@@ -12,13 +12,13 @@ import axiosInstance from '../../lib/axios-instance';
 
 //APIs
 //Get all conversations for a user
-const getUserConversations = async (user_id: string, pagination: TPaginationQParams = { page: 1, limit: 15 }): Promise<TApiSuccess<TConversation[]>> => {
+const getUserConversations = async (_user_id: string, pagination: TPaginationQParams = { page: 1, limit: 15 }): Promise<TApiSuccess<TConversation[]>> => {
     const queryParams = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
     });
 
-    const response = await axiosInstance.get(`/conversations/user/${user_id}?${queryParams}`);
+    const response = await axiosInstance.get(`/conversations/user?${queryParams}`);
     return response.data;
 }
 
@@ -35,8 +35,8 @@ const updateConversationTitle = async (id: string, title: string): Promise<TApiS
 }
 
 //Create a new conversation
-const createConversation = async (user_id: string, title?: string): Promise<TApiSuccess<TConversation>> => {
-    const response = await axiosInstance.post('/conversations', { user_id, title });
+const createConversation = async (title?: string): Promise<TApiSuccess<TConversation>> => {
+    const response = await axiosInstance.post('/conversations', { title });
     return response.data;
 }
 
@@ -57,7 +57,7 @@ export const useUserConversations = (
 ) => {
     return useQuery({
         queryKey: [...queryKeys.userConversations(user_id), pagination],
-        queryFn: () => getUserConversations(user_id, pagination),
+        queryFn: () => getUserConversations('', pagination),
         enabled: !!user_id,
         ...options
     });
@@ -113,7 +113,7 @@ export const useInfiniteConversations = (
     return useInfiniteQuery({
         queryKey: [...queryKeys.userConversations(user_id), 'infinite'],
         queryFn: ({ pageParam = 1 }) => {
-            return getUserConversations(user_id, { page: pageParam, limit: pageSize });
+            return getUserConversations('', { page: pageParam, limit: pageSize });
         },
         getNextPageParam: (lastPage: TApiSuccess<TConversation[]>) => {
             if (lastPage.pagination && lastPage.pagination.page < lastPage.pagination.total_pages) {
@@ -132,10 +132,8 @@ export const useCreateConversation = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ user_id, title }: { user_id: string; title?: string }) =>
-            createConversation(user_id, title),
+        mutationFn: ({ title }: { title?: string }) => createConversation(title),
         onSuccess: (data) => {
-            // Invalidate user conversations to refetch the list
             queryClient.invalidateQueries({ queryKey: queryKeys.userConversations(data?.data?.user_id || '') });
         },
     });

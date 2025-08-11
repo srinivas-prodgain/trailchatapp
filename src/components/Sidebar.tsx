@@ -1,5 +1,5 @@
 'use client'
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -8,11 +8,16 @@ import { PlusIcon, TrashIcon, Loader2 } from 'lucide-react'
 import { useInfiniteConversations, useDeleteConversation } from "../hooks/api/conversation";
 
 import { useChatContext } from "@/contexts/chat-context";
+import AuthContext from "@/providers/auth-provider";
 
 const Sidebar: React.FC = () => {
   const router = useRouter();
   const { activeConversationId, setActiveConversationId } = useChatContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Get authenticated user
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
 
   const {
     data,
@@ -21,7 +26,7 @@ const Sidebar: React.FC = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteConversations("123", 3); // Smaller page size for testing
+  } = useInfiniteConversations(user?.uid || "anonymous", 3); // Smaller page size for testing
 
   const deleteConversationMutation = useDeleteConversation();
 
